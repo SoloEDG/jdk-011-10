@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { blockMeshes, disposeGroup } from "./meshes";
+import { blockMeshes, disposeGroup, reliefPreviewMeshes } from "./meshes";
 import type { Workspace, Vec3 } from "../../../shared/document";
 import type { SceneHit } from "../../../shared/commands";
 export function mountScene(
@@ -59,6 +59,8 @@ export function mountScene(
   scene.add(grid);
   let blocks = blockMeshes(state.doc);
   scene.add(blocks);
+  let preview: THREE.Group | null = null;
+  let previewRev = -2;
   const cursor = new THREE.Mesh(
     new THREE.BoxGeometry(1.02, 1.02, 1.02),
     new THREE.MeshBasicMaterial({ color: "#e9b261", wireframe: true }),
@@ -99,16 +101,28 @@ export function mountScene(
       (-(e.clientY - r.top) / r.height) * 2 + 1,
     );
     ray.setFromCamera(mouse, camera);
-    const h = ray.intersectObjects(blocks.children)[0];
+    const placing = !!state.relief?.placing;
+    const h = ray.intersectObjects(
+      placing ? [...blocks.children, floor] : blocks.children,
+    )[0];
     hit = null;
-    if (h && h.instanceId !== undefined && h.face) {
+    if (h && h.object === floor) {
+      const cell = {
+        x: Math.floor(h.point.x),
+        y: 0,
+        z: Math.floor(h.point.z),
+      };
+      hit = { cell, adjacent: { ...cell } };
+      cursor.position.set(cell.x + 0.5, 0.5, cell.z + 0.5);
+    } else if (h && h.instanceId !== undefined && h.face) {
       const cell = h.object.userData.cells[h.instanceId] as Vec3;
       const n = h.face.normal;
       hit = {
         cell: { ...cell },
         adjacent: { x: cell.x + n.x, y: cell.y + n.y, z: cell.z + n.z },
       };
-      const p = state.tool === "place" ? hit.adjacent : hit.cell;
+      const p =
+        state.tool === "place" && !placing ? hit.adjacent : hit.cell;
       cursor.position.set(p.x + 0.5, p.y + 0.5, p.z + 0.5);
     }
     cursor.visible = !!hit;
@@ -148,6 +162,20 @@ export function mountScene(
       scene.add(blocks);
       revision = state.doc.revision;
     }
+    const rev = state.relief ? state.relief.planRevision : -1;
+    if (rev !== previewRev) {
+      previewRev = rev;
+      if (preview) {
+        scene.remove(preview);
+        disposeGroup(preview);
+        preview = null;
+      }
+      const plan = state.relief?.plan;
+      if (plan) {
+        preview = reliefPreviewMeshes(plan);
+        scene.add(preview);
+      }
+    }
     avatar.position.set(
       state.doc.player.x,
       state.doc.player.y,
@@ -181,6 +209,7 @@ export function mountScene(
       resize.disconnect();
       controls.dispose();
       disposeGroup(blocks);
+      if (preview) disposeGroup(preview);
       renderer.dispose();
       renderer.domElement.remove();
     },

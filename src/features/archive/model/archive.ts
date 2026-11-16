@@ -1,8 +1,10 @@
 import type { Workspace, WorldDocument } from "../../../shared/document";
 import { writeWorld, readWorld, downloadWorld } from "../lib/storage";
 import { decode } from "../lib/codec";
+import { resetRelief } from "../../relief";
 function install(s: Workspace, doc: WorldDocument) {
   const revision = s.doc.revision + 1;
+  resetRelief(s);
   s.doc = doc;
   s.doc.revision = revision;
   s.dirty = false;

@@ -4,6 +4,7 @@ import type { SceneHit } from "../shared/commands";
 import { createWorld, editCells } from "../features/world";
 import { pickCorner, regionCells, clearRegion } from "../features/selection";
 import { chooseMaterial, selectSlot } from "../features/inventory";
+import { setReliefAnchor, cancelRelief } from "../features/relief";
 export function createWorkspace() {
   return reactive<Workspace>({
     doc: createWorld(),
@@ -11,6 +12,7 @@ export function createWorkspace() {
     tool: "place",
     region: null,
     anchor: null,
+    relief: null,
     message: "欢迎来到方屿，开始建造你的世界",
     dirty: false,
     mode: "build",
@@ -27,6 +29,10 @@ export function commandRouter(s: Workspace) {
       chooseMaterial(s, id);
     },
     hit(h: SceneHit) {
+      if (s.relief?.placing) {
+        setReliefAnchor(s, h.cell);
+        return;
+      }
       if (s.tool === "select") pickCorner(s, h.cell);
       else
         s.message = editCells(
@@ -57,7 +63,10 @@ export function commandRouter(s: Workspace) {
       if (e.code === "KeyB") s.tool = "place";
       if (e.code === "KeyE") s.tool = "remove";
       if (e.code === "KeyR") s.tool = "select";
-      if (e.code === "Escape") clearRegion(s);
+      if (e.code === "Escape") {
+        if (s.relief) cancelRelief(s);
+        else clearRegion(s);
+      }
       if (e.code === "Tab") {
         e.preventDefault();
         s.mode = s.mode === "build" ? "walk" : "build";

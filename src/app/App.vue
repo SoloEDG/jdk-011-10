@@ -17,6 +17,7 @@ import {
 import { WorldViewport, summarize } from "../features/world";
 import { InventoryPanel, Hotbar } from "../features/inventory";
 import { SelectionPanel } from "../features/selection";
+import { ReliefPanel } from "../features/relief";
 import { PlayerPanel, attachPlayer } from "../features/player";
 import {
   ArchivePanel,
@@ -165,7 +166,9 @@ function fullscreen() {
         </div>
       </section>
       <aside class="right-sidebar">
-        <InventoryPanel :state="state" @choose="cmd.material" /><SelectionPanel
+        <InventoryPanel :state="state" @choose="cmd.material" /><ReliefPanel
+          :state="state"
+        /><SelectionPanel
           :state="state"
           @fill="cmd.region(false)"
           @remove="cmd.region(true)"

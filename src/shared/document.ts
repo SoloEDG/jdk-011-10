@@ -21,12 +21,69 @@ export interface Region {
   b: Vec3;
 }
 export type Tool = "place" | "remove" | "select";
+export interface ReliefCrop {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+export interface ReliefParams {
+  width: number;
+  maxHeight: number;
+  invert: boolean;
+  crop: ReliefCrop;
+  baseMode: "ground" | "flat";
+  baseY: number;
+  fitStock: boolean;
+  substitute: boolean;
+}
+export interface ReliefColumn {
+  dx: number;
+  dz: number;
+  x: number;
+  z: number;
+  base: number;
+  height: number;
+  fullHeight: number;
+  material: MaterialId;
+  ideal: MaterialId;
+  r: number;
+  g: number;
+  b: number;
+}
+export interface ReliefPlan {
+  columns: ReliefColumn[];
+  cells: Block[];
+  budget: Record<MaterialId, number>;
+  total: number;
+  holes: number;
+  conflicts: Vec3[];
+  shortage: Partial<Record<MaterialId, number>>;
+  fits: boolean;
+  compression: number;
+  notes: string[];
+}
+export interface ReliefSession {
+  fileName: string;
+  sourceWidth: number;
+  sourceHeight: number;
+  stage: "loading" | "ready" | "error";
+  placing: boolean;
+  progress: number;
+  error: string | null;
+  anchor: Vec3 | null;
+  params: ReliefParams;
+  plan: ReliefPlan | null;
+  planRevision: number;
+  notes: string[];
+}
 export interface Workspace {
   doc: WorldDocument;
   material: MaterialId;
   tool: Tool;
   region: Region | null;
   anchor: Vec3 | null;
+  relief: ReliefSession | null;
   message: string;
   dirty: boolean;
   mode: "build" | "walk";

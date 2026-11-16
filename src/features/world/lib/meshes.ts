@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { WorldDocument } from "../../../shared/document";
+import type { ReliefPlan, WorldDocument } from "../../../shared/document";
 import { materials } from "../../../shared/materials";
 export function blockMeshes(doc: WorldDocument) {
   const group = new THREE.Group();
@@ -41,4 +41,50 @@ export function disposeGroup(group: THREE.Group) {
       ms.forEach((m) => m.dispose());
     }
   });
+}
+
+/** 浮雕预览：计划方块半透明显示，冲突位置标红。 */
+export function reliefPreviewMeshes(plan: ReliefPlan) {
+  const group = new THREE.Group();
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  const matrix = new THREE.Matrix4();
+  for (const spec of materials) {
+    const cells = plan.cells.filter((c) => c.material === spec.id);
+    if (!cells.length) continue;
+    const mesh = new THREE.InstancedMesh(
+      geometry,
+      new THREE.MeshStandardMaterial({
+        color: spec.color,
+        transparent: true,
+        opacity: 0.55,
+        depthWrite: false,
+        emissive: spec.color,
+        emissiveIntensity: 0.3,
+      }),
+      cells.length,
+    );
+    cells.forEach((b, i) => {
+      matrix.makeTranslation(b.x + 0.5, b.y + 0.5, b.z + 0.5);
+      mesh.setMatrixAt(i, matrix);
+    });
+    group.add(mesh);
+  }
+  if (plan.conflicts.length) {
+    const mesh = new THREE.InstancedMesh(
+      geometry,
+      new THREE.MeshBasicMaterial({
+        color: "#cf6a55",
+        transparent: true,
+        opacity: 0.5,
+        depthWrite: false,
+      }),
+      plan.conflicts.length,
+    );
+    plan.conflicts.forEach((p, i) => {
+      matrix.makeTranslation(p.x + 0.5, p.y + 0.5, p.z + 0.5);
+      mesh.setMatrixAt(i, matrix);
+    });
+    group.add(mesh);
+  }
+  return group;
 }
